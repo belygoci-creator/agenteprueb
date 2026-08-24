@@ -1,102 +1,86 @@
 # Design System
 
-<!-- Fuente de verdad visual del proyecto.
-     Consultar antes de crear cualquier componente nuevo.
-     Actualizar cuando se añadan nuevos patrones, componentes o se modifique la identidad visual. -->
-
 ---
 
 ## Paleta de colores
 
-<!-- Define todos los colores con su rol semántico y código hex.
-     Ejemplo:
-     | Rol | Nombre | Hex |
-     |-----|--------|-----|
-     | Primary | Violeta principal | #7665FF |
-     | Secondary | ... | ... |
-     | Accent | ... | ... |
-     | Background | Fondo base | #FFFFFF |
-     | Surface | Fondo de cards | #F8F8F8 |
-     | Text primary | Texto principal | #111111 |
-     | Text secondary | Texto secundario | #666666 |
-     | Success | Estados positivos | #22C55E |
-     | Error | Estados de error | #EF4444 |
-     | Warning | Advertencias | #F59E0B |
--->
-
 | Rol | Nombre | Hex |
 |-----|--------|-----|
-| Primary | <!-- --> | <!-- --> |
-| Secondary | <!-- --> | <!-- --> |
-| Background | <!-- --> | <!-- --> |
-| Text primary | <!-- --> | <!-- --> |
-| Error | <!-- --> | <!-- --> |
+| Primary | Terracota | #E0714A |
+| Secondary | Verde salvia | #4E7C6B |
+| Accent | Mostaza suave | #E8B85A |
+| Background | Crema | #FBF7F2 |
+| Surface | Fondo de cards | #FFFFFF |
+| Text primary | Marrón oscuro casi negro | #2B211C |
+| Text secondary | Marrón grisáceo | #7A6D63 |
+| Success | Verde | #4E9963 |
+| Error | Rojo terracota | #C0503A |
+| Warning | Ámbar | #D99A3D |
+
+Paleta cálida y humana a propósito: el tono del producto es cercano y conversacional (el
+agente tutea, evita jerga), y los colores acompañan eso en vez de sentirse como un banco
+corporativo. Se evita el azul frío típico de fintech.
 
 ---
 
 ## Tipografía
 
-<!-- Define fuentes, tamaños y pesos.
-     Ejemplo:
-     - **Display / Headings:** Fraunces, serif
-     - **Body:** Outfit, sans-serif
-     - **Monospace / Code:** Space Mono
-     
-     | Nivel | Fuente | Tamaño | Peso |
-     |-------|--------|--------|------|
-     | H1 | Fraunces | 48px | 700 |
-     | H2 | Fraunces | 36px | 600 |
-     | Body | Outfit | 16px | 400 |
-     | Caption | Outfit | 12px | 400 |
--->
+- **Display / Headings:** Fraunces, serif — le da calidez sin perder seriedad en los títulos.
+- **Body:** Inter, sans-serif — legibilidad alta para números y texto largo (entrevista, fichas).
+- **Monospace / Code:** no aplica (no hay bloques de código de cara al usuario).
+
+| Nivel | Fuente | Tamaño | Peso |
+|-------|--------|--------|------|
+| H1 | Fraunces | 32px | 600 |
+| H2 | Fraunces | 24px | 600 |
+| H3 | Inter | 18px | 600 |
+| Body | Inter | 16px | 400 |
+| Caption | Inter | 13px | 400 |
 
 ---
 
 ## Espaciado y grid
 
-<!-- Define la escala de espaciado y el sistema de grid.
-     Ejemplo:
-     - Escala: 4px base (4, 8, 12, 16, 24, 32, 48, 64, 96)
-     - Grid: 12 columnas, gutter 24px, max-width 1200px -->
+- Escala: 4px base (4, 8, 12, 16, 24, 32, 48, 64).
+- Grid: 12 columnas en dashboard (desktop-first, el asesor lo usa en escritorio), gutter 24px,
+  max-width 1120px.
+- La entrevista del cliente es de una sola columna, ancho máximo 640px, centrada — un solo foco
+  de atención por pantalla, sin distracciones mientras responde.
 
 ---
 
 ## Estilo de componentes
 
-<!-- Describe las decisiones de estilo que aplican globalmente.
-     Ejemplo:
-     - Border radius: 8px para cards, 4px para inputs, full para badges
-     - Sombras: solo en modales y dropdowns, nunca decorativas
-     - Densidad: compacta (menos padding) en tablas, estándar en el resto
-     - Iconos: Lucide React, tamaño base 20px -->
+- Border radius: 12px en cards y botones, 8px en inputs — esquinas suaves, coherente con el tono
+  cálido.
+- Sombras: sutiles, solo en cards del dashboard y modales; nunca decorativas.
+- Densidad: estándar en la entrevista (una pregunta a la vez, espacio para respirar); compacta en
+  la tabla de clientes del dashboard.
+- Iconos: Lucide React, tamaño base 20px.
+- Números financieros: siempre alineados a la derecha en tablas, formateados con separador de
+  miles y símbolo de moneda explícito (ARS/USD) — nunca un número sin su moneda al lado, dado que
+  el producto maneja ambas.
 
 ---
 
 ## Tono visual
 
-<!-- Descripción en prosa del look & feel.
-     Qué sensación debe transmitir el producto. Qué NO debe parecer.
-     Ejemplo:
-     "Profesional pero accesible. No corporativo ni frío.
-      Limpio, con espacio para respirar. Nada de efectos decorativos gratuitos.
-      La información es el protagonista, la UI desaparece." -->
+Cercano y cálido, coherente con cómo ya habla el agente con el cliente: tuteo, sin tecnicismos,
+"en cristiano". El dashboard del asesor puede ser algo más denso e informativo (es una
+herramienta de trabajo), pero nunca frío ni corporativo — nada de azul-gris genérico de fintech.
+La entrevista del cliente final debe sentirse como una conversación, no como completar un
+formulario bancario: una pregunta a la vez, lenguaje simple, feedback inmediato de progreso.
+
+Qué NO debe parecer: un banco tradicional, una app de trading, o un formulario burocrático.
 
 ---
 
 ## Componentes definidos
 
-<!-- A medida que se crean componentes reutilizables, documentarlos aquí.
-     Nombre, propósito, props principales, cuándo usarlo y cuándo no.
-     Ejemplo:
-     
-     ### StatusBadge
-     Muestra el estado de un elemento (activo, inactivo, pendiente).
-     Props: `status: 'active' | 'inactive' | 'pending'`
-     Usar en tablas y cards. No usar en formularios. -->
+<!-- Se completa a medida que se construyen componentes reutilizables durante el desarrollo. -->
 
 ---
 
 ## Referencias visuales
 
-<!-- Links o descripciones de diseños, productos o webs que han servido de referencia.
-     Útil para mantener coherencia cuando entra alguien nuevo al proyecto. -->
+<!-- Sin referencias externas por ahora — paleta y tono definidos desde cero para este proyecto. -->
