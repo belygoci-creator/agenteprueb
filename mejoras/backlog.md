@@ -19,14 +19,15 @@ Descripción breve de la mejora y por qué aportaría valor.
 
 ---
 
-<!-- Ejemplo (borrar cuando haya entradas reales):
-
-### [MEJORA-01] Modo oscuro
-**Área:** Frontend
+### [MEJORA-01] Proveedor de email propio para Supabase Auth
+**Área:** Infraestructura
 **Prioridad estimada:** Media
-**Origen:** Petición recurrente durante beta
+**Origen:** Al probar el login del asesor (magic link), el servicio de email gratuito de
+Supabase demoró/no entregó el correo de forma confiable.
 
-Implementar dark mode usando las variables CSS del design system.
-Ya está parcialmente preparado con las variables de color semánticas.
+El servicio de email compartido de Supabase (plan Free) tiene límites bajos y entregas poco
+confiables. Configurar un proveedor propio (ej. Resend) en Supabase Auth → Settings → SMTP
+daría entregas más rápidas y confiables del magic link. No es bloqueante para uso interno con
+un solo asesor, pero conviene resolverlo antes de depender del login en el día a día.
 
--->
+---
