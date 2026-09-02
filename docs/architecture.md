@@ -53,9 +53,20 @@ src/
 │   ├── supabase/           → Cliente Supabase y helpers
 │   ├── claude/             → Cliente de la API de Claude y prompt del sistema (basado en
 │   │                          `instrucciones-sistema.md`)
+│   ├── alertas/            → Lógica pura de la vigilancia de mercado (detectarEventos,
+│   │                          clientesAfectados, mensajeInterno, construirCorreoAlerta,
+│   │                          construirCorreoInterno). Imports relativos con extensión .ts a
+│   │                          propósito -- también la consume supabase/functions/revision-diaria
+│   │                          (Deno), que no resuelve el alias @/ ni imports sin extensión.
 │   └── utils/               → Funciones utilitarias (formateo de moneda, fechas, etc.)
 ├── hooks/                  → Custom hooks de React
 └── types/                  → Tipos TypeScript compartidos
+
+supabase/
+└── functions/
+    └── revision-diaria/    → Revisión diaria de mercado, como Edge Function (Deno). Orquesta
+                               src/lib/alertas por import relativo -- no reimplementa su lógica.
+                               La dispara pg_cron (ver "Integraciones externas" y config.toml).
 
 api/
 └── motor-calculo.py        → Función serverless Python (lógica de reglas-recomendacion.md)
@@ -93,6 +104,30 @@ mejoras/                    → Ideas futuras no implementadas
   bloqueado — nunca se estima un valor.
 - **Supabase:** base de datos, autenticación y storage (si se necesita exportar PDF/Word más
   adelante, ver `prd.md` → SHOULD).
+- **Yahoo Finance (API pública `query1.finance.yahoo.com/v8/finance/chart`, sin clave):** cierres
+  diarios del S&P 500 (`^GSPC`) para la capa de vigilancia de mercado
+  (`supabase/functions/revision-diaria`). Es una API no oficial de Yahoo, sin SLA — si falla, la
+  función no genera eventos ese día (nunca estima un cierre), mismo criterio que la cotización
+  del dólar blue.
+- **Composio (`backend.composio.dev`, API key):** puente hacia la acción externa de
+  `supabase/functions/revision-diaria` — mandar el correo de aviso (al asesor siempre, al
+  cliente si `avisar_cliente = true`) a través de una cuenta de Gmail conectada en Composio,
+  ejecutando `GMAIL_SEND_EMAIL` vía `POST /api/v3.1/tools/execute/{tool_slug}`. No es SMTP
+  directo: no hace falta contraseña de aplicación de Gmail, solo `COMPOSIO_API_KEY` (secreta),
+  `COMPOSIO_GMAIL_ACCOUNT_ID` y `COMPOSIO_GMAIL_ENTITY_ID` (identificadores de la conexión, no
+  son secretos), configurados como secrets de Supabase (`supabase secrets set`), no en
+  `.env.local`. La API key requiere permiso `tool_execution` con escritura ("Full access" al
+  crearla), y Gmail tiene que estar conectado en **Auth Configs del mismo proyecto de Composio**
+  que esa key — un proyecto no ve las cuentas conectadas de otro (a esto se lo llevó media tarde
+  de prueba y error, ver changelog 2026-08-29). Yahoo Finance es de solo lectura y no pasa por
+  Composio — Composio se usa únicamente para la acción de escritura hacia un servicio externo
+  (mandar el correo).
+- **pg_cron / Supabase Edge Functions:** `pg_cron` dispara `revision-diaria` una vez al día con
+  un `POST` HTTP (vía `net.http_post`, extensión `pg_net`). Como no hay un usuario logueado
+  detrás de esa llamada, la función no verifica JWT de Supabase Auth (`verify_jwt = false` en
+  `supabase/config.toml` para esta función) — en su lugar valida un secreto propio,
+  `CRON_SECRET`, en la cabecera `Authorization: Bearer <CRON_SECRET>`. El job de `pg_cron` en sí
+  todavía no está creado (ver `mejoras/backlog.md`); por ahora la función se invoca a mano.
 
 ---
 

@@ -22,9 +22,19 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" className="font-display text-lg font-semibold">
-            asesor-financiero
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard/clientes/nuevo" className="font-display text-lg font-semibold">
+              asesor-financiero
+            </Link>
+            <nav className="flex gap-4 text-sm">
+              <Link href="/dashboard/clientes/nuevo" className="text-muted-foreground hover:text-foreground">
+                Nuevo cliente
+              </Link>
+              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+                Ver clientes
+              </Link>
+            </nav>
+          </div>
           <LogoutButton />
         </div>
       </header>

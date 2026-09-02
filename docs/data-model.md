@@ -28,6 +28,8 @@ Un cliente final del asesor.
 | nombre | text | Nombre del cliente |
 | email | text (nullable) | Contacto opcional, no se usa para login |
 | estado | text | `pendiente` \| `entrevista_completa` |
+| avisar_cliente | boolean | Si recibe correo cuando una alerta de mercado lo afecta (default `false`, ver `scripts/revision.ts`) |
+| suspendido | boolean | Excluye al cliente de `clientesAfectados` aunque tenga posición y perfil coincidente (default `false`) |
 | created_at | timestamptz | Fecha de alta |
 
 ### entrevista_tokens
@@ -115,6 +117,70 @@ registro técnico que audita el asesor.
 | supuestos | jsonb | Supuestos usados (ej. rendimiento asumido si se pidió el escenario opcional) |
 | created_at | timestamptz | Fecha del cálculo |
 
+### observaciones_mercado
+Valor observado de una clase de activo en una fecha. Capa de vigilancia de mercado, por encima
+del resto del modelo — no depende de `clientes` ni de `fichas`.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | uuid (PK) | Identificador de la observación |
+| clase | text | Clase de activo observada (ej. `renta_variable`) |
+| fecha | date | Fecha de la observación — único junto con `clase` |
+| valor | numeric | Valor/índice observado |
+| created_at | timestamptz | Fecha de carga |
+
+### reglas_alerta
+Umbral configurado para disparar una alerta, en tanto por uno (`0.03` = 3 %). El umbral es una
+magnitud, no una dirección fija: dispara tanto si la clase sube como si baja esa magnitud o más
+en la ventana (ver `detectarEventos` en `src/lib/alertas/detectar-eventos.ts` — cambio posterior
+al seed original, que solo contemplaba caídas).
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | uuid (PK) | Identificador de la regla |
+| clase | text | Clase de activo a la que aplica |
+| perfil_riesgo | text | `conservador` \| `moderado` \| `dinamico` |
+| ventana_dias | int | Ventana de días sobre la que se mide la variación |
+| umbral | numeric | Magnitud mínima de variación (subida o baja) que dispara el evento, en tanto por uno (`0 < umbral ≤ 1`) |
+| created_at | timestamptz | Fecha de alta |
+
+### eventos_mercado
+Disparo efectivo de una `regla_alerta`: la variación medida en `[desde, hasta]` superó el umbral.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | uuid (PK) | Identificador del evento |
+| regla_id | uuid (FK → reglas_alerta) | Regla que se disparó |
+| desde | date | Inicio de la ventana medida |
+| hasta | date | Fin de la ventana medida — único junto con `regla_id` |
+| variacion | numeric | Variación medida en tanto por uno (negativa si es una caída, positiva si es una subida) |
+| created_at | timestamptz | Fecha de detección |
+
+### alertas
+Instancia de un `evento_mercado` aplicada a un cliente concreto (después de aplicar las
+exclusiones de `src/lib/alertas/clientes-afectados.ts`: suspendido, sin análisis, perfil
+distinto al de la regla).
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | uuid (PK) | Identificador de la alerta |
+| evento_id | uuid (FK → eventos_mercado) | Evento que la originó |
+| cliente_id | uuid (FK → clientes) | Cliente afectado — único junto con `evento_id` |
+| estado | text | `pendiente` \| `revisada` |
+| created_at | timestamptz | Fecha de generación |
+
+### posiciones
+La cartera de un cliente, valorada en euros.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | uuid (PK) | Identificador de la posición |
+| cliente_id | uuid (FK → clientes) | Cliente dueño de la posición |
+| clase | text | Clase de activo de la posición |
+| valor_eur | numeric | Valor de la posición en euros |
+| fecha | date | Fecha de la valoración |
+| created_at | timestamptz | Fecha de carga |
+
 ---
 
 ## Relaciones entre entidades
@@ -126,6 +192,10 @@ erDiagram
   clientes ||--o{ fichas : "completa"
   fichas ||--o{ diagnosticos : "genera"
   diagnosticos ||--o{ recomendaciones : "genera"
+  reglas_alerta ||--o{ eventos_mercado : "dispara"
+  eventos_mercado ||--o{ alertas : "genera"
+  clientes ||--o{ alertas : "recibe"
+  clientes ||--o{ posiciones : "tiene"
 ```
 
 ---
@@ -154,6 +224,15 @@ erDiagram
   `prd.md` → SHOULD), que se implementa como INSERT de una nueva versión, no como UPDATE
   destructivo — para no perder el registro auditable.
 
+### observaciones_mercado / reglas_alerta / eventos_mercado
+- SELECT: cualquier asesor (datos globales de mercado, no asociados a un cliente).
+- INSERT / UPDATE / DELETE: sin policy — exclusivamente desde `service_role` en servidor.
+
+### alertas / posiciones
+- SELECT: el asesor dueño del cliente asociado (join contra `clientes.asesor_id`), mismo patrón
+  que `fichas`/`diagnosticos`/`recomendaciones`.
+- INSERT / UPDATE / DELETE: sin policy — exclusivamente desde `service_role` en servidor.
+
 ---
 
 ## Migraciones
@@ -163,6 +242,8 @@ erDiagram
 | 2026-08-15 | `supabase/migrations/0001_initial_schema.sql` | Creación de `asesores`, `clientes`, `entrevista_tokens`, `fichas`, `diagnosticos`, `recomendaciones` + políticas RLS + trigger de alta automática de asesor al crear usuario |
 | 2026-08-18 | `supabase/migrations/0002_fix_crear_cliente_con_token_security.sql` | Fix: `crear_cliente_con_token` a `security definer` (RLS bloqueaba el insert en `entrevista_tokens`) |
 | 2026-08-24 | `supabase/migrations/0003_generar_enlace_entrevista.sql` | Función `generar_enlace_entrevista` (`security definer`) para reentrevistar a un cliente existente |
+| 2026-08-26 | `supabase/migrations/0004_alertas_de_mercado.sql` | Capa de vigilancia de mercado: `observaciones_mercado`, `reglas_alerta`, `eventos_mercado`, `alertas`, `posiciones` + políticas RLS (lectura solo para asesores) + seed de 3 reglas de caída de renta variable a 5 días (conservador 3 %, moderado 4 %, dinámico 6 %) |
+| 2026-08-27 | `supabase/migrations/0005_alertas_avisar_cliente_y_suspendido.sql` | `clientes.avisar_cliente` y `clientes.suspendido` (ambos boolean, default `false`) — los necesita `scripts/revision.ts` para decidir a quién avisar por correo y a quién excluir |
 
 ---
 
@@ -170,3 +251,7 @@ erDiagram
 
 No se necesitan datos iniciales de catálogo (sin categorías ni roles configurables en esta
 fase). El único seed manual es el registro del asesor en `asesores`, creado al primer login.
+
+`reglas_alerta` sí trae seed de fábrica (ver `0004_alertas_de_mercado.sql`): 3 reglas de caída
+de renta variable a 5 días, una por perfil de riesgo — conservador 3 %, moderado 4 %,
+dinámico 6 %.

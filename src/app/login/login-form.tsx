@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { enviarEnlaceAcceso } from "./actions";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -17,17 +17,11 @@ export function LoginForm() {
     setStatus("loading");
     setErrorMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { error } = await enviarEnlaceAcceso(email, window.location.origin);
 
     if (error) {
       setStatus("error");
-      setErrorMessage(error.message);
+      setErrorMessage(error);
       return;
     }
 

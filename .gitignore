@@ -47,6 +47,9 @@ __pycache__/
 # Nota: .mcp.json SÍ se commitea (las claves van como ${VARIABLE}, nunca el valor real).
 .claude/settings.local.json
 
+# Supabase CLI (estado local del link al proyecto, no se commitea)
+supabase/.temp/
+
 # OS
 .DS_Store
 Thumbs.db

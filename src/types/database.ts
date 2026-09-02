@@ -1,14 +1,17 @@
 /**
- * Tipos de la base de datos, escritos a mano a partir de docs/data-model.md
- * y supabase/migrations/0001_initial_schema.sql.
+ * Tipos de la base de datos, escritos a mano a partir de docs/data-model.md,
+ * supabase/migrations/0001_initial_schema.sql,
+ * supabase/migrations/0004_alertas_de_mercado.sql y
+ * supabase/migrations/0005_alertas_avisar_cliente_y_suspendido.sql.
  *
- * TODO: una vez que el proyecto de Supabase esté creado y el MCP autenticado,
- * regenerar con `supabase gen types typescript` y reemplazar este archivo.
+ * TODO: regenerar con `supabase gen types typescript` y reemplazar este
+ * archivo (el proyecto de Supabase ya está creado y el MCP autenticado).
  */
 
 export type PerfilRiesgo = "conservador" | "moderado" | "dinamico";
 export type EstadoCliente = "pendiente" | "entrevista_completa";
 export type EtapaPrioridad = "fondo_emergencia" | "deuda_cara" | "invertir";
+export type EstadoAlerta = "pendiente" | "revisada";
 
 export interface Database {
   public: {
@@ -36,6 +39,8 @@ export interface Database {
           nombre: string;
           email: string | null;
           estado: EstadoCliente;
+          avisar_cliente: boolean;
+          suspendido: boolean;
           created_at: string;
         };
         Insert: {
@@ -44,12 +49,16 @@ export interface Database {
           nombre: string;
           email?: string | null;
           estado?: EstadoCliente;
+          avisar_cliente?: boolean;
+          suspendido?: boolean;
           created_at?: string;
         };
         Update: Partial<{
           nombre: string;
           email: string | null;
           estado: EstadoCliente;
+          avisar_cliente: boolean;
+          suspendido: boolean;
         }>;
         Relationships: [];
       };
@@ -151,6 +160,92 @@ export interface Database {
           Database["public"]["Tables"]["recomendaciones"]["Row"],
           "id" | "created_at"
         > & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      observaciones_mercado: {
+        Row: {
+          id: string;
+          clase: string;
+          fecha: string;
+          valor: number;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["observaciones_mercado"]["Row"],
+          "id" | "created_at"
+        > & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      reglas_alerta: {
+        Row: {
+          id: string;
+          clase: string;
+          perfil_riesgo: PerfilRiesgo;
+          ventana_dias: number;
+          umbral: number;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["reglas_alerta"]["Row"], "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      eventos_mercado: {
+        Row: {
+          id: string;
+          regla_id: string;
+          desde: string;
+          hasta: string;
+          variacion: number;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["eventos_mercado"]["Row"],
+          "id" | "created_at"
+        > & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      alertas: {
+        Row: {
+          id: string;
+          evento_id: string;
+          cliente_id: string;
+          estado: EstadoAlerta;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["alertas"]["Row"], "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<{
+          estado: EstadoAlerta;
+        }>;
+        Relationships: [];
+      };
+      posiciones: {
+        Row: {
+          id: string;
+          cliente_id: string;
+          clase: string;
+          valor_eur: number;
+          fecha: string;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["posiciones"]["Row"], "id" | "created_at"> & {
           id?: string;
           created_at?: string;
         };

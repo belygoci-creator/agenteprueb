@@ -1,0 +1,9 @@
+# Config de Supabase CLI para este proyecto.
+# Ver docs/architecture.md → Integraciones externas para el detalle de por
+# qué revision-diaria no verifica JWT.
+
+[functions.revision-diaria]
+# La dispara pg_cron (un POST HTTP sin usuario logueado), no alguien con
+# sesión de Supabase Auth. Se protege con un secreto propio (CRON_SECRET) en
+# la cabecera Authorization, verificado a mano dentro de la función.
+verify_jwt = false

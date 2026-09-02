@@ -54,6 +54,27 @@ pnpm install
 pnpm dev
 ```
 
+### Revisión diaria de mercado
+
+Vive como Supabase Edge Function en `supabase/functions/revision-diaria/`, no como parte de esta
+app Next.js. Baja los cierres del S&P 500, decide eventos/alertas y avisa por correo (siempre al
+asesor, al cliente si tiene `avisar_cliente = true`) a través de Composio y su Gmail conectado —
+ver `docs/architecture.md` → Integraciones externas.
+
+La dispara `pg_cron` con un POST HTTP, protegido con un secreto propio (`CRON_SECRET`) en la
+cabecera `Authorization`, no con login de usuario. Para invocarla a mano (por ejemplo, para
+probarla):
+
+```bash
+curl -X POST "https://<project-ref>.supabase.co/functions/v1/revision-diaria" \
+  -H "Authorization: Bearer <CRON_SECRET>"
+```
+
+Requiere los secrets `CRON_SECRET`, `COMPOSIO_API_KEY`, `COMPOSIO_GMAIL_ACCOUNT_ID`,
+`COMPOSIO_GMAIL_ENTITY_ID`, `ASESOR_EMAIL_PERMITIDO` (`supabase secrets set NOMBRE=valor`);
+`SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya vienen inyectados por la plataforma. Todavía no
+está programado el `pg_cron` que la llame sola todos los días (ver `mejoras/backlog.md`).
+
 ---
 
 ## Estructura de carpetas
@@ -65,9 +86,12 @@ src/
 │   ├── entrevista/[token]/ → Ruta pública de la entrevista, acceso por enlace único
 │   └── api/                → Route handlers (entrevista con Claude, motor de cálculo)
 ├── components/             → Componentes de UI, entrevista y dashboard
-├── lib/                    → Supabase, cliente de Claude, utilidades
+├── lib/                    → Supabase, cliente de Claude, utilidades, lógica de alertas
 ├── hooks/                  → Custom hooks de React
 └── types/                  → Tipos TypeScript compartidos
+
+supabase/
+└── functions/revision-diaria/ → Revisión diaria de mercado (Supabase Edge Function, Deno)
 
 api/
 └── motor-calculo.py        → Función serverless Python con la lógica de recomendación
